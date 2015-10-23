@@ -1373,7 +1373,10 @@ class CourseEnrollment(models.Model):
         if GeneratedCertificate.certificate_for_student(self.user, self.course_id) is not None:
             return False
 
-        #TODO - When Course administrators to define a refund period for paid courses then refundable will be supported. # pylint: disable=fixme
+        course_start = self.course_overview.start
+        # TODO Add logic to grab the date of enrollment with verified seat
+        # add logic to choose which of the two dates is further away
+        # add logic to configure the refund policy days in settings
 
         course_mode = CourseMode.mode_for_course(self.course_id, 'verified')
         if course_mode is None:
