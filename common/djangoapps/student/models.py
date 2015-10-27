@@ -1385,7 +1385,6 @@ class CourseEnrollment(models.Model):
 
         # TODO Add logic to grab the date of enrollment with verified seat
         # add logic to choose which of the two dates is further away
-        # add logic to configure the refund policy days in settings
 
         course_mode = CourseMode.mode_for_course(self.course_id, 'verified')
         if course_mode is None:
@@ -2060,3 +2059,31 @@ class CourseEnrollmentAttribute(models.Model):
             "name": attribute.name,
             "value": attribute.value,
         }
+
+class EnrollmentRefundConfiguration(ConfigurationModel):
+    """
+    Configuration for course enrollment refunds.
+    """
+
+    # TODO: Django 1.8 introduces a DurationField
+    # (https://docs.djangoproject.com/en/1.8/ref/models/fields/#durationfield)
+    # for storing timedeltas which uses MySQL's bigint for backing
+    # storage. After we've completed the Django upgrade we should be
+    # able to replace this field with a DurationField named
+    # `refund_window` without having to run a migration or change
+    # other code.
+    refund_window_microseconds = models.BigIntegerField(
+        default=1209600000000,
+        help_text="The window of time after enrolling during which users can be granted"
+            " a refund, represented in microseconds. The default is 14 days."
+    )
+
+    @property
+    def refund_window(self):
+        """Return the configured refund window as a `datetime.timedelta`."""
+        return timedelta(microseconds=self.refund_window_microseconds)
+
+    @refund_window.setter
+    def refund_window(self, refund_window):
+        """Set the current refund window to the given timedelta."""
+        self.refund_window_microseconds = int(refund_window.total_seconds() * 1000000)
