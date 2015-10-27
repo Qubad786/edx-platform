@@ -2060,6 +2060,7 @@ class CourseEnrollmentAttribute(models.Model):
             "value": attribute.value,
         }
 
+
 class EnrollmentRefundConfiguration(ConfigurationModel):
     """
     Configuration for course enrollment refunds.
