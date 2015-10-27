@@ -1374,23 +1374,30 @@ class CourseEnrollment(models.Model):
         if GeneratedCertificate.certificate_for_student(self.user, self.course_id) is not None:
             return False
 
-        course_start = self.course_overview.start
-        order_number = CourseEnrollmentAttribute.get_enrollment_attribute(
-            self,
-            namespace='order',
-            name='order_number'
-        ).get('value')
-
-        order = ecommerce_api_client(self.user).order.get()
-
-        # TODO Add logic to grab the date of enrollment with verified seat
-        # add logic to choose which of the two dates is further away
+        # If it is after the refundable window they should not be refunded.
+        if datetime.now() > self._refund_window_end_date():
+            return False
 
         course_mode = CourseMode.mode_for_course(self.course_id, 'verified')
         if course_mode is None:
             return False
         else:
             return True
+
+    def _refund_window_end_date(self):
+        order_number = CourseEnrollmentAttribute.get_enrollment_attribute(
+            self,
+            namespace='order',
+            name='order_number'
+        ).get('value')
+
+        order = ecommerce_api_client(self.user).orders(order_number).get()
+
+        refund_window_start_date = max(
+            datetime.strptime(order.get('date_placed', "1970-01-01T00:00:00Z"), "%Y-%m-%dT%H:%M:%SZ"),
+            self.course_overview.start.replace(tzinfo=None)
+        )
+        return refund_window_start_date + EnrollmentRefundConfiguration.current().refund_window
 
     @property
     def username(self):
@@ -2037,13 +2044,13 @@ class CourseEnrollmentAttribute(models.Model):
 
     @classmethod
     def get_enrollment_attribute(cls, enrollment, **kwargs):
-        """Retrieve list of all enrollment attributes.
+        """Retrieve a single enrollment attribute.
 
         Args:
             enrollment(CourseEnrollment): 'CourseEnrollment' for which list is to retrieve
+            kwargs: Any additional parameters to scope the query
 
-
-        Returns: list
+        Returns: dict
 
         Example:
         >>> CourseEnrollmentAttribute.get_enrollment_attribute(CourseEnrollment, namespace='credit', name='provider_id')
@@ -2053,7 +2060,11 @@ class CourseEnrollmentAttribute(models.Model):
             "value": "hogwarts",
         }
         """
-        attribute = cls.objects.get(enrollment=enrollment, **kwargs)
+        try:
+            attribute = cls.objects.get(enrollment=enrollment, **kwargs)
+        except ObjectDoesNotExist:
+            return {}
+
         return {
             "namespace": attribute.namespace,
             "name": attribute.name,
