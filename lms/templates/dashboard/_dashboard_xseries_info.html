@@ -1,0 +1,41 @@
+<%page args="course_program_info, program_marketing_url, enrollment_mode" />
+<%!
+    from django.utils.translation import ugettext as _
+%>
+<%namespace name='static' file='../static_content.html'/>
+
+<% xseries_link='<a href="#" target="_blank">Course Name</a>' %>
+<div class="message message-status is-shown credit-message">
+    <div class="xseries-action">
+        <div class="message-copy xseries-msg">
+            <p>
+                <strong>${_("XSeries Program: Interested in more courses in this subject?")}</strong>
+            <p>
+            <p>
+                ${_("This course is 1 of {total} courses in the {link_start}{course_display}{link_end}.").format(
+                    total=course_program_info['total'],
+                    link_start='<a href="{}">'.format(program_marketing_url),
+                    link_end='</a>',
+                    course_display=course_program_info['display_name'],
+            )}
+            </p>
+
+        </div>
+        % if enrollment_mode != "verified":
+            <a class="btn xseries-border-btn" href="#" target="_blank">
+                <i class="action-xseries-icon"></i>
+                <span>
+                    ${_("View XSeries Details")}
+                </span>
+            </a>
+        % else:
+            <a class="btn xseries-base-btn" href="#" target="_blank">
+                <i class="action-xseries-icon"></i>
+                <span>
+                    ${_("View XSeries Details")}
+                </span>
+            </a>
+        % endif
+    </div>
+</div>
+

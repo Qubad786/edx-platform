@@ -37,6 +37,7 @@ from certificates.models import CertificateStatuses  # pylint: disable=import-er
 from certificates.tests.factories import GeneratedCertificateFactory  # pylint: disable=import-error
 from verify_student.models import SoftwareSecurePhotoVerification
 import shoppingcart  # pylint: disable=import-error
+from openedx.core.djangoapps.programs.models import ProgramsApiConfig
 
 # Explicitly import the cache from ConfigurationModel so we can reset it after each test
 from config_models.models import cache
@@ -562,6 +563,72 @@ class DashboardTest(ModuleStoreTestCase):
         )
         enrollment = CourseEnrollment.enroll(self.user, self.course.id, mode=enrollment_mode)
         return complete_course_mode_info(self.course.id, enrollment)
+
+    def _create_program_config(self, **kwargs):
+        """
+        DRY helper.  Create a new ProgramsApiConfig with self.DEFAULTS, updated
+        with any kwarg overrides.
+        """
+        data = dict(
+            internal_service_url="http://internal/",
+            public_service_url="http://public/",
+            api_version_number=1
+        )
+        ProgramsApiConfig(**dict(data, **kwargs)).save()
+
+    def test_program_courses_on_dashboard_without_configuration(self):
+        """If programs configuration is disabled than programs related data
+        will not appear on student dashboard.
+        """
+        CourseModeFactory.create(
+            course_id=self.course.id,
+            mode_slug='verified',
+            mode_display_name='Verified',
+            expiration_datetime=datetime.now(pytz.UTC) + timedelta(days=1)
+        )
+        CourseEnrollment.enroll(self.user, self.course.id)
+        self.client.login(username="jack", password="test")
+
+        response = self.client.get(reverse('dashboard'))
+        self.assertEquals(response.status_code, 200)
+        self.assertIn('Pursue a Certificate of Achievement to highlight', response.content)
+
+        self.assertNotIn('XSeries Program Course', response.content)
+        self.assertNotIn('XSeries Program: Interested in more courses in this subject?', response.content)
+
+    @ddt.data('verified', 'honor')
+    def test_verified_program_courses_on_dashboard_with_configuration(self, mode):
+        """If enable_student_dashboard configuration is enabled than student can see
+        the programs information on dashboard.
+        """
+        CourseModeFactory.create(
+            course_id=self.course.id,
+            mode_slug=mode,
+            mode_display_name=mode,
+            expiration_datetime=datetime.now(pytz.UTC) + timedelta(days=1)
+        )
+        CourseEnrollment.enroll(self.user, self.course.id, mode=mode)
+
+        self.client.login(username="jack", password="test")
+        self._create_program_config(enabled=True, enable_student_dashboard=True)
+
+        with patch('student.views._get_xseries_programs') as mock_data:
+
+            mock_data.return_value = {
+                self.course.id: {'total': 2, 'display_name': 'Demo course programs'}
+            }
+
+            response = self.client.get(reverse('dashboard'))
+            self.assertIn('XSeries Program Course', response.content)
+            self.assertIn('XSeries Program: Interested in more courses in this subject?', response.content)
+            self.assertIn('This course is 1 of 2 courses in the', response.content)
+            self.assertIn('Demo course programs', response.content)
+
+            # For verified enrollment button class will be base-btn for others it will be border-btn
+            if mode == 'verified':
+                self.assertIn('xseries-base-btn', response.content)
+            else:
+                self.assertIn('xseries-border-btn', response.content)
 
 
 class UserSettingsEventTestMixin(EventTestMixin):
