@@ -23,7 +23,6 @@ import uuid
 
 import analytics
 from config_models.models import ConfigurationModel
-from commerce import ecommerce_api_client
 from django.utils.translation import ugettext_lazy as _
 from django.conf import settings
 from django.utils import timezone
@@ -50,6 +49,7 @@ from xmodule_django.models import CourseKeyField, NoneToEmptyManager
 from certificates.models import GeneratedCertificate
 from course_modes.models import CourseMode
 import lms.lib.comment_client as cc
+from lms.djangoapps.commerce import ecommerce_api_client
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from util.model_utils import emit_field_changed_events, get_changed_fields_dict
 from util.query import use_read_replica_if_available
@@ -1385,6 +1385,7 @@ class CourseEnrollment(models.Model):
             return True
 
     def _refund_window_end_date(self):
+        """ Calculate and return the refund window end date. """
         order_number = CourseEnrollmentAttribute.get_enrollment_attribute(
             self,
             namespace='order',
@@ -2086,8 +2087,10 @@ class EnrollmentRefundConfiguration(ConfigurationModel):
     # other code.
     refund_window_microseconds = models.BigIntegerField(
         default=1209600000000,
-        help_text="The window of time after enrolling during which users can be granted"
+        help_text=_(
+            "The window of time after enrolling during which users can be granted"
             " a refund, represented in microseconds. The default is 14 days."
+        )
     )
 
     @property
