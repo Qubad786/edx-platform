@@ -12,12 +12,15 @@ this package should be kept small, thin, and stateless.
 import logging
 
 from django.conf import settings
-from django.contrib.auth.models import User
+from django.core.exceptions import ImproperlyConfigured
 
-from openedx.core.lib.programs.utils import get_id_token, programs_api_client, is_programs_service_configured
+from openedx.core.djangoapps.util.helpers import get_id_token
+from openedx.core.lib.programs.utils import programs_api_client, is_programs_service_configured
 
 
 log = logging.getLogger(__name__)
+# OAuth2 Client name for programs
+CLIENT_NAME = "programs"
 
 
 def get_course_programs_for_dashboard(user, course_keys):   # pylint: disable=invalid-name
@@ -31,6 +34,13 @@ def get_course_programs_for_dashboard(user, course_keys):   # pylint: disable=in
     TODO: ultimately, we will want this function to be versioned, since
     it assumes v1 of the programs API.  This is not critical for our
     initial release.
+
+    Arguments:
+        user (user object): User for which we need to get JWT ID-Token
+        course_keys (list): List of course keys in which user is enrolled
+
+    Returns:
+        Json response containing programs or None
     """
     # unicode-ify the course keys for efficient lookup
     course_keys = map(unicode, course_keys)
@@ -40,10 +50,13 @@ def get_course_programs_for_dashboard(user, course_keys):   # pylint: disable=in
         log.error("programs service is not properly configured.")
         return
     try:
-        api_client = programs_api_client(settings.PROGRAMS_API_URL, get_id_token(user, 'programs'))
+        api_client = programs_api_client(settings.PROGRAMS_API_URL, get_id_token(user, CLIENT_NAME))
         log.info("Programs slumber-based client 'EdxRestApiClient' created successfully.")
     except ValueError:
         log.error('Failed to create programs api client.', exc_info=True)
+        return
+    except ImproperlyConfigured:
+        log.error("OAuth2 Client with name 'programs' is not present in the DB.", exc_info=True)
         return
 
     course_programs = {}
@@ -54,9 +67,9 @@ def get_course_programs_for_dashboard(user, course_keys):   # pylint: disable=in
         log.error('Failed to get programs from api client.', exc_info=True)
         return course_programs
 
-    programs = response['results']
+    programs = response.get('results')
     if programs is None:
-        log.info("No xseries found for the user '%s'.", user.username)
+        log.info("No programs found for the user '%s'.", user.username)
         return course_programs
 
     # reindex the result from pgm -> course code -> course run

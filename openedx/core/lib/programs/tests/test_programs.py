@@ -1,6 +1,7 @@
 """
-Tests for credit course tasks.
+Tests for the Programs.
 """
+
 import json
 from mock import patch, Mock
 
@@ -11,7 +12,7 @@ from student.tests.factories import UserFactory
 
 
 class TestGetXSeriesProgram(TestCase):
-    """Basic tests for xseries programs."""
+    """Basic tests for programs."""
 
     def setUp(self, **kwargs):  # pylint: disable=unused-argument
         super(TestGetXSeriesProgram, self).setUp()
