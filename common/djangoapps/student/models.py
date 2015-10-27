@@ -23,6 +23,7 @@ import uuid
 
 import analytics
 from config_models.models import ConfigurationModel
+from commerce import ecommerce_api_client
 from django.utils.translation import ugettext_lazy as _
 from django.conf import settings
 from django.utils import timezone
@@ -1374,6 +1375,14 @@ class CourseEnrollment(models.Model):
             return False
 
         course_start = self.course_overview.start
+        order_number = CourseEnrollmentAttribute.get_enrollment_attribute(
+            self,
+            namespace='order',
+            name='order_number'
+        ).get('value')
+
+        order = ecommerce_api_client(self.user).order.get()
+
         # TODO Add logic to grab the date of enrollment with verified seat
         # add logic to choose which of the two dates is further away
         # add logic to configure the refund policy days in settings
@@ -2026,3 +2035,28 @@ class CourseEnrollmentAttribute(models.Model):
             }
             for attribute in cls.objects.filter(enrollment=enrollment)
         ]
+
+    @classmethod
+    def get_enrollment_attribute(cls, enrollment, **kwargs):
+        """Retrieve list of all enrollment attributes.
+
+        Args:
+            enrollment(CourseEnrollment): 'CourseEnrollment' for which list is to retrieve
+
+
+        Returns: list
+
+        Example:
+        >>> CourseEnrollmentAttribute.get_enrollment_attribute(CourseEnrollment, namespace='credit', name='provider_id')
+        {
+            "namespace": "credit",
+            "name": "provider_id",
+            "value": "hogwarts",
+        }
+        """
+        attribute = cls.objects.get(enrollment=enrollment, **kwargs)
+        return {
+            "namespace": attribute.namespace,
+            "name": attribute.name,
+            "value": attribute.value,
+        }
