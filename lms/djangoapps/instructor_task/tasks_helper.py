@@ -1306,6 +1306,11 @@ def upload_exec_summary_report(_xmodule_instance_args, _entry_id, course_id, _ta
     TASK_LOG.info(u'%s, Task type: %s, Finalizing executive summary report task', task_info_string, action_name)
     return task_progress.update_task_state(extra_meta=current_step)
 
+def upload_course_survey_report(_xmodule_instance_args, _entry_id, course_id, _task_input, action_name):  # pylint: disable=invalid-name
+    """
+    For a given `course_id`, generate a html report containing the survey results for a course.
+    """
+    pass
 
 def upload_proctored_exam_results_report(_xmodule_instance_args, _entry_id, course_id, _task_input, action_name):  # pylint: disable=invalid-name
     """
