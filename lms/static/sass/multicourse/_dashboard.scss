@@ -806,6 +806,14 @@
               margin-top: 0;
             }
 
+            .message-copy{
+              font-weight: 500;
+            }
+
+            .message-copy-bold{
+              font-weight: 600;
+            }
+
             .xseries-border-btn {
               @extend %btn-pl-black-border;
               @include float(right);
