@@ -576,6 +576,7 @@ class DashboardTest(ModuleStoreTestCase):
         )
         ProgramsApiConfig(**dict(data, **kwargs)).save()
 
+    @unittest.skipUnless(settings.ROOT_URLCONF == 'lms.urls', 'Test only valid in lms')
     def test_program_courses_on_dashboard_without_configuration(self):
         """If programs configuration is disabled than programs related data
         will not appear on student dashboard.
@@ -596,6 +597,7 @@ class DashboardTest(ModuleStoreTestCase):
         self.assertNotIn('XSeries Program Course', response.content)
         self.assertNotIn('XSeries Program: Interested in more courses in this subject?', response.content)
 
+    @unittest.skipUnless(settings.ROOT_URLCONF == 'lms.urls', 'Test only valid in lms')
     @ddt.data('verified', 'honor')
     def test_verified_program_courses_on_dashboard_with_configuration(self, mode):
         """If enable_student_dashboard configuration is enabled than student can see
