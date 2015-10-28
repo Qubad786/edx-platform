@@ -15,9 +15,6 @@ log = logging.getLogger(__name__)
 def get_id_token(user, client_name):
     """Generates a JWT ID-Token, using or creating user's OAuth access token.
 
-    TODO: there's a circular import problem somewhere which is why we do
-    the oidc import inside of this function.
-
     Arguments:
         user (User Object): User for which we need to get JWT ID-Token
         client_name (unicode): Name of the OAuth2 Client
@@ -26,6 +23,7 @@ def get_id_token(user, client_name):
         String containing the signed JWT value or raise the exception
         'ImproperlyConfigured'
     """
+    # TODO: there's a circular import problem somewhere which is why we do the oidc import inside of this function.
     import oauth2_provider.oidc as oidc
 
     try:

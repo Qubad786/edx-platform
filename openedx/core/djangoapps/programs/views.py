@@ -36,7 +36,7 @@ def get_course_programs_for_dashboard(user, course_keys):   # pylint: disable=in
         course_keys (list): List of course keys in which user is enrolled
 
     Returns:
-        Json response containing programs or None
+        Dictionary response containing programs or None
     """
     if not ProgramsApiConfig.current().is_student_dashboard_enabled:
         log.info("Programs service for student dashboard is disabled.")
