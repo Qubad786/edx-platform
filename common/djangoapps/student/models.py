@@ -49,7 +49,7 @@ from xmodule_django.models import CourseKeyField, NoneToEmptyManager
 from certificates.models import GeneratedCertificate
 from course_modes.models import CourseMode
 import lms.lib.comment_client as cc
-from lms.djangoapps.commerce import ecommerce_api_client
+from openedx.core.djangoapps.commerce import ecommerce_api_client
 from openedx.core.djangoapps.content.course_overviews.models import CourseOverview
 from util.model_utils import emit_field_changed_events, get_changed_fields_dict
 from util.query import use_read_replica_if_available

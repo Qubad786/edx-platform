@@ -12,7 +12,7 @@ import jwt
 import mock
 
 from edx_rest_api_client import auth
-from commerce import ecommerce_api_client
+from openedx.core.djangoapps.commerce import ecommerce_api_client
 from student.tests.factories import UserFactory
 
 JSON = 'application/json'
