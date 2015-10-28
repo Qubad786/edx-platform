@@ -152,6 +152,7 @@ def instructor_dashboard_2(request, course_id):
     if can_see_proctoring:
         sections.append(_section_proctoring(course, access))
 
+
     # Certificates panel
     # This is used to generate example certificates
     # and enable self-generated certificates for a course.
