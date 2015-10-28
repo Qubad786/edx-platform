@@ -1059,7 +1059,7 @@
       width: auto;
       height: auto;
 
-      & .course-pace-label {
+      & + .course-pace-label {
         display: inline-block;
       }
     }

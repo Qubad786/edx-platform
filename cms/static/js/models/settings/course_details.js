@@ -88,18 +88,10 @@ var CourseDetails = Backbone.Model.extend({
         else return "";
     },
 
-    // Whether or not the course pacing can be toggled.
-    // If the course is currently running, returns false; otherwise,
-    // returns true.
+    // Whether or not the course pacing can be toggled. If the course
+    // has already started, returns false; otherwise, returns true.
     canTogglePace: function () {
-        var today = new Date();
-        if (new Date(this.get('start_date')) <= today) {
-            if (_.isNull(this.get('end_date'))) {
-                return false;
-            }
-            return today <= new Date(this.get('end_date'));
-        }
-        return true;
+        return new Date() <= new Date(this.get('start_date'));
     }
 });
 
