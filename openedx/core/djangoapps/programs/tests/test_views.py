@@ -11,11 +11,11 @@ from provider.oauth2.models import Client
 from student.tests.factories import UserFactory
 
 
-class TestGetXSeriesProgram(TestCase):
-    """Basic tests for programs."""
+class TestGetXSeriesPrograms(TestCase):
+    """Basic tests for xseries programs."""
 
     def setUp(self, **kwargs):  # pylint: disable=unused-argument
-        super(TestGetXSeriesProgram, self).setUp()
+        super(TestGetXSeriesPrograms, self).setUp()
         Client.objects.get_or_create(name="programs", client_type=0)
         self.user = UserFactory()
         self.response = json.dumps(

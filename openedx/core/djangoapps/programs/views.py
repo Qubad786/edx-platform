@@ -15,7 +15,8 @@ from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 
 from openedx.core.djangoapps.util.helpers import get_id_token
-from openedx.core.lib.programs.utils import programs_api_client, is_programs_service_configured
+from openedx.core.djangoapps.programs.models import ProgramsApiConfig
+from openedx.core.djangoapps.programs.utils import programs_api_client
 
 
 log = logging.getLogger(__name__)
@@ -24,39 +25,37 @@ CLIENT_NAME = "programs"
 
 
 def get_course_programs_for_dashboard(user, course_keys):   # pylint: disable=invalid-name
-    """ Given a username and an iterable of course keys, find all
+    """ Return all programs related to a user.
+
+    Given a user and an iterable of course keys, find all
     the programs relevant to the user's dashboard and return them in a
     dictionary keyed by the course_key.
-
-    username is a string coming from the currently-logged-in user's name
-    dashboard enrollments is an iterable of course keys
-
-    TODO: ultimately, we will want this function to be versioned, since
-    it assumes v1 of the programs API.  This is not critical for our
-    initial release.
+    user is a User object coming from the currently-logged-in user.
 
     Arguments:
-        user (user object): User for which we need to get JWT ID-Token
+        user (user object): Currently logged-in User for which we need to get
+            JWT ID-Token
         course_keys (list): List of course keys in which user is enrolled
 
     Returns:
         Json response containing programs or None
     """
+    if not ProgramsApiConfig.current().is_student_dashboard_enabled:
+        log.info("Programs service for student dashboard is disabled.")
+        return
+
     # unicode-ify the course keys for efficient lookup
     course_keys = map(unicode, course_keys)
 
     # get programs slumber-based client 'EdxRestApiClient'
-    if not is_programs_service_configured:
-        log.error("programs service is not properly configured.")
-        return
     try:
-        api_client = programs_api_client(settings.PROGRAMS_API_URL, get_id_token(user, CLIENT_NAME))
+        api_client = programs_api_client(ProgramsApiConfig.current().public_api_url, get_id_token(user, CLIENT_NAME))
         log.info("Programs slumber-based client 'EdxRestApiClient' created successfully.")
     except ValueError:
         log.error('Failed to create programs api client.', exc_info=True)
         return
     except ImproperlyConfigured:
-        log.error("OAuth2 Client with name 'programs' is not present in the DB.", exc_info=True)
+        log.error("OAuth2 Client with name '%s' is not present in the DB." % CLIENT_NAME, exc_info=True)
         return
 
     course_programs = {}
