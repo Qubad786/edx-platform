@@ -11,7 +11,6 @@ this package should be kept small, thin, and stateless.
 
 import logging
 
-from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 
 from openedx.core.djangoapps.util.helpers import get_id_token
@@ -30,7 +29,6 @@ def get_course_programs_for_dashboard(user, course_keys):   # pylint: disable=in
     Given a user and an iterable of course keys, find all
     the programs relevant to the user's dashboard and return them in a
     dictionary keyed by the course_key.
-    user is a User object coming from the currently-logged-in user.
 
     Arguments:
         user (user object): Currently logged-in User for which we need to get
@@ -55,7 +53,8 @@ def get_course_programs_for_dashboard(user, course_keys):   # pylint: disable=in
         log.error('Failed to create programs api client.', exc_info=True)
         return
     except ImproperlyConfigured:
-        log.error("OAuth2 Client with name '%s' is not present in the DB." % CLIENT_NAME, exc_info=True)
+        error_msg = "OAuth2 Client with name '{client_name}' is not present in the DB.".format(client_name=CLIENT_NAME)
+        log.error(error_msg, exc_info=True)
         return
 
     course_programs = {}

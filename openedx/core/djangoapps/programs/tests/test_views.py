@@ -2,70 +2,97 @@
 Tests for the Programs.
 """
 
-import json
-from mock import patch, Mock
+from mock import patch
 
-from django.test import TestCase
-from openedx.core.lib.programs import get_course_programs_for_dashboard
 from provider.oauth2.models import Client
-from student.tests.factories import UserFactory
+
+from openedx.core.djangoapps.programs.views import get_course_programs_for_dashboard
+from openedx.core.djangoapps.programs.tests.test_models import ProgramsApiBasicTestConfig
+from student.tests.factories import AnonymousUserFactory, UserFactory
 
 
-class TestGetXSeriesPrograms(TestCase):
-    """Basic tests for xseries programs."""
+class TestGetXSeriesPrograms(ProgramsApiBasicTestConfig):
+    """
+    Tests for the Programs views.
+    """
 
     def setUp(self, **kwargs):  # pylint: disable=unused-argument
         super(TestGetXSeriesPrograms, self).setUp()
+        self.create_config(enabled=True, enable_student_dashboard=True)
         Client.objects.get_or_create(name="programs", client_type=0)
         self.user = UserFactory()
-        self.response = json.dumps(
-            {
-                "results": [
-                    {"course_codes": [{"run_modes": [{"course_key": "edx/demox/course"}, {"course_key": "a/c/c"}]}]},
-                    {"course_codes": [{"run_modes": [{"course_key": "z/c/v"}, {"course_key": "valid/edx/course"}]}]},
-                    {"course_codes": [{"run_modes": [{"course_key": "z/z/z"}, {"course_key": "g/h/f"}]}]}
-                ]
-            }
-        )
+        self.programs_api_response = {
+            "results": [
+                {
+                    'category': 'xseries',
+                    'status': 'active',
+                    'subtitle': 'Dummy program for testing',
+                    'name': 'First Program',
+                    'course_codes': [
+                        {
+                            'organization': {'display_name': 'Test Organization', 'key': 'edX'},
+                            'display_name': 'Demo Course',
+                            'key': 'TEST_A',
+                            'run_modes': [{'sku': '', 'mode_slug': 'ABC', 'course_key': 'edX/DemoX/Run'}]
+                        }
+                    ]
+                }
+            ]
+        }
 
     def test_get_course_programs_with_valid_user_and_courses(self):
-        """Mock the request call. """
-        with patch('requests.get') as mock_get:
-            mock_get.return_value = Mock(status_code=200, content=self.response)
-            programs = get_course_programs_for_dashboard(self.user.username, ['edx/demox/course', 'valid/edx/course'])
-            self.assertDictEqual(
-                {
-                    'edx/demox/course': {
-                        "course_codes": [{"run_modes": [{"course_key": "edx/demox/course"}, {"course_key": "a/c/c"}]}]
-                    },
-                    'valid/edx/course': {
-                        "course_codes": [{"run_modes": [{"course_key": "z/c/v"}, {"course_key": "valid/edx/course"}]}]
-                    }
-                },
-                programs
-            )
+        """ Test that the method 'get_course_programs_for_dashboard' returns
+        the expected format.
+        """
+        # mock the request call
+        with patch('slumber.Resource.get') as mock_get:
+            mock_get.return_value = self.programs_api_response
+            programs = get_course_programs_for_dashboard(self.user, ['edX/DemoX/Run', 'valid/edX/Course'])
+            expected_output = {
+                'edX/DemoX/Run': {
+                    'category': 'xseries',
+                    'status': 'active',
+                    'course_codes': [
+                        {
+                            'organization': {'display_name': 'Test Organization', 'key': 'edX'},
+                            'display_name': 'Demo Course',
+                            'key': 'TEST_A',
+                            'run_modes': [{'sku': '', 'mode_slug': 'ABC', 'course_key': 'edX/DemoX/Run'}]
+                        }
+                    ],
+                    'subtitle': 'Dummy program for testing',
+                    'name': 'First Program'
+                }
+            }
+            self.assertEqual(expected_output, programs)
 
     def test_get_course_programs_with_non_existing_courses(self):
-        """Mock the request call. """
-        with patch('requests.get') as mock_get:
-            mock_get.return_value = Mock(status_code=200, content=self.response)
-            self.assertDictEqual(
-                {},
-                get_course_programs_for_dashboard(self.user.username, ['invalid/demo/course'])
+        """ Test that the method 'get_course_programs_for_dashboard' returns
+        only those program courses which exists in the programs api response.
+        """
+        # mock the request call
+        with patch('slumber.Resource.get') as mock_get:
+            mock_get.return_value = self.programs_api_response
+            self.assertEqual(
+                get_course_programs_for_dashboard(self.user, ['invalid/edX/Course']), {}
             )
 
     def test_get_course_programs_with_invalid_user(self):
-        """Mock the request call. """
-        with patch('requests.get') as mock_get:
-            mock_get.return_value = Mock(status_code=200, content=self.response)
-            self.assertIsNone(
-                get_course_programs_for_dashboard('invalid_user', ['edx/demox/course'])
-            )
+        """ Test that the method 'get_course_programs_for_dashboard' returns
+        None for an anonymous user.
+        """
+        # mock the request call
+        with patch('slumber.Resource.get') as mock_get:
+            mock_get.return_value = self.programs_api_response
+            self.assertIsNone(get_course_programs_for_dashboard(AnonymousUserFactory(), ['edX/DemoX/Run']))
 
     def test_get_course_programs_with_empty_response(self):
-        """Mock the request call. """
-        with patch('requests.get') as mock_get:
-            mock_get.return_value = Mock(status_code=200, content=json.dumps({}))
-            self.assertIsNone(
-                get_course_programs_for_dashboard(self.user.username, ['edx/demox/course'])
+        """ Test that the method 'get_course_programs_for_dashboard' returns
+        empty dict if programs rest api client returns empty response.
+        """
+        # mock the request call
+        with patch('slumber.Resource.get') as mock_get:
+            mock_get.return_value = {}
+            self.assertEqual(
+                get_course_programs_for_dashboard(self.user, ['edX/DemoX/Run']), {}
             )

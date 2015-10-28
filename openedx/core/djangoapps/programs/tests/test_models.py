@@ -8,10 +8,9 @@ from mock import patch
 from openedx.core.djangoapps.programs.models import ProgramsApiConfig
 
 
-@patch('config_models.models.cache.get', return_value=None)  # during tests, make every cache get a miss.
-class ProgramsApiConfigTest(TestCase):
+class ProgramsApiBasicTestConfig(TestCase):
     """
-    Tests for the ProgramsApiConfig model.
+    Base configuration class for Programs testing.
     """
 
     INTERNAL_URL = "http://internal/"
@@ -29,6 +28,13 @@ class ProgramsApiConfigTest(TestCase):
         with any kwarg overrides.
         """
         ProgramsApiConfig(**dict(self.DEFAULTS, **kwargs)).save()
+
+
+@patch('config_models.models.cache.get', return_value=None)  # during tests, make every cache get a miss.
+class ProgramsApiConfigTest(ProgramsApiBasicTestConfig):
+    """
+    Tests for the ProgramsApiConfig model.
+    """
 
     def test_default_state(self, _mock_cache):
         """
